@@ -76,7 +76,7 @@ public class Suggestion {
 	}
 	
 	public List<Card> getCards() {
-		List<Card> cards = new ArrayList<>();
+		List<Card> cards = new ArrayList<Card>();
 		cards.add(s);
 		cards.add(w);
 		cards.add(r);

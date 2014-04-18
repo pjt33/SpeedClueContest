@@ -30,7 +30,7 @@ public class TestServer {
 		String launchFilename
 	) throws IOException, InterruptedException, ProtocolViolation {
 		accept = new ServerSocket(0);
-		players = new ArrayList<>();
+		players = new ArrayList<Player>();
 		random = new Random();
 		parseLaunchScript(launchFilename);
 	}
@@ -135,7 +135,7 @@ public class TestServer {
 	}
 	
 	private List<List<Card>> dealCards(Suggestion solution) {
-		List<List<Card>> hands = new ArrayList<>();
+		List<List<Card>> hands = new ArrayList<List<Card>>();
 		
 		List<Card> deck = shuffleDeck(solution);
 		Collections.shuffle(deck, random);
@@ -187,11 +187,10 @@ public class TestServer {
 		Runtime r = Runtime.getRuntime();
 		String portString = String.valueOf(portNumber);
 		
-		try (
-			BufferedReader br = new BufferedReader(
-				new FileReader(launchFilename)
-			)
-		) {
+		BufferedReader br = new BufferedReader(
+			new FileReader(launchFilename)
+		);
+		{
 			String line;
 			while ((line = br.readLine()) != null) {
 				Matcher matcher = getIdentifier.matcher(line);

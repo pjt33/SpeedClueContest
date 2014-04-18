@@ -42,12 +42,12 @@ public class RandomPlayer {
 		
 		buffer = new char[512];
 		disproved = false;
-		hand = new ArrayList<>();
+		hand = new ArrayList<Card>();
 		index = -1;
 		this.identifier = identifier;
 		last = null;
 		random = new Random();
-		suggestions = new ArrayList<>();
+		suggestions = new ArrayList<Suggestion>();
 		
 		System.out.println("Succesfully instantiated!\n");
 		for (int i = 0; i < 1000000000; ++i);

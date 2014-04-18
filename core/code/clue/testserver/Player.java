@@ -50,8 +50,8 @@ public class Player {
 		
 		buffer = new char[512];
 		eliminated = true;
-		hand = new ArrayList<>();
-		suggestions = new ArrayList<>();
+		hand = new ArrayList<Card>();
+		suggestions = new ArrayList<Suggestion>();
 		this.identifier = identifier;
 		this.socket = socket;
 		
