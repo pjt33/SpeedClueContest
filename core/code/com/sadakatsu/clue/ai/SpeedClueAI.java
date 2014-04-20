@@ -68,11 +68,11 @@ public abstract class SpeedClueAI {
 		}
 		
 		buffer = new char[512];
-		hand = new ArrayList<>();
+		hand = new ArrayList<Card>();
 		index = -1;
 		this.identifier = identifier;
 		this.logMessages = logMessages;
-		pastSuggestions = new ArrayList<>();
+		pastSuggestions = new ArrayList<Suggestion>();
 		playing = false;
 		playerCount = -1;
 		playersInGame = -1;
@@ -128,7 +128,7 @@ public abstract class SpeedClueAI {
 	 * the List is empty, then the player is currently not in a game.
 	 */
 	public List<Card> getHand() {
-		return new ArrayList<>(hand);
+		return new ArrayList<Card>(hand);
 	}
 	
 	/**
@@ -139,7 +139,7 @@ public abstract class SpeedClueAI {
 	 * Suggestions.
 	 */
 	public List<Suggestion> getPastSuggestions() {
-		return new ArrayList<>(pastSuggestions);
+		return new ArrayList<Suggestion>(pastSuggestions);
 	}
 	
 	/**
@@ -285,14 +285,14 @@ public abstract class SpeedClueAI {
 		try {
 			Matcher m = accusationMessagePattern.matcher(message);
 			m.matches();
-			accuser = Integer.parseInt(m.group("accuser"));
-			accusation = new Suggestion(m.group("accusation"));
-			correct = m.group("correct") == "+";
-		} catch (
-			InvalidSuggestionString |
-			IllegalStateException |
-			NumberFormatException e
-		) {
+			accuser = Integer.parseInt(m.group(1));
+			accusation = new Suggestion(m.group(2));
+			correct = m.group(3) == "+";
+		} catch (InvalidSuggestionString e) {
+			throw new ProtocolViolation("accusation", message);
+		} catch (IllegalStateException e) {
+			throw new ProtocolViolation("accusation", message);
+		} catch (NumberFormatException e) {
 			throw new ProtocolViolation("accusation", message);
 		}
 		
@@ -362,13 +362,13 @@ public abstract class SpeedClueAI {
 		try {
 			Matcher m = disproveMessagePattern.matcher(message);
 			m.matches();
-			suggester = Integer.parseInt(m.group("suggester"));
-			suggestion = new Suggestion(m.group("suggestion"));
-		} catch (
-			InvalidSuggestionString |
-			IllegalStateException |
-			NumberFormatException e
-		) {
+			suggester = Integer.parseInt(m.group(1));
+			suggestion = new Suggestion(m.group(2));
+		} catch (InvalidSuggestionString e) {
+			throw new ProtocolViolation("suggestion", message);
+		} catch (IllegalStateException e) {
+			throw new ProtocolViolation("suggestion", message);
+		} catch (NumberFormatException e) {
 			throw new ProtocolViolation("suggestion", message);
 		}
 		
@@ -408,8 +408,8 @@ public abstract class SpeedClueAI {
 			// number of players and the player's index.
 			Matcher m = resetMessagePattern.matcher(message);
 			m.matches();
-			pc = Integer.parseInt(m.group("playerCount"));
-			i = Integer.parseInt(m.group("playerIndex"));
+			pc = Integer.parseInt(m.group(1));
+			i = Integer.parseInt(m.group(2));
 			
 			// Carefully examine the Cards passed in the message.  If the wrong
 			// number of Cards was passed, or any of the abbreviations does not
@@ -417,11 +417,11 @@ public abstract class SpeedClueAI {
 			// type is already watched because of the calls to Matcher.group()).
 			// If there are no problems with this part, we should get a List of
 			// Cards to use for a hand.
-			String[] abbr = m.group("cards").split(" ");
+			String[] abbr = m.group(3).split(" ");
 			if (abbr.length != getHandSize(pc, i)) {
 				throw new IllegalStateException();
 			}
-			h = new ArrayList<>();
+			h = new ArrayList<Card>();
 			for (String a : abbr) {
 				Card c = Card.from(a);
 				if (c == null) {
@@ -429,7 +429,7 @@ public abstract class SpeedClueAI {
 				}
 				h.add(c);
 			}
-		} catch (IllegalStateException | NumberFormatException e) {
+		} catch (RuntimeException e) {
 			System.err.println(e.getMessage());
 			for (StackTraceElement s : e.getStackTrace()) {
 				System.err.println(s);
@@ -494,22 +494,22 @@ public abstract class SpeedClueAI {
 		try {
 			Matcher m = suggestionMessagePattern.matcher(message);
 			m.matches();
-			suggester = Integer.parseInt(m.group("suggester"));
-			suggestion = new Suggestion(m.group("suggestion"));
+			suggester = Integer.parseInt(m.group(1));
+			suggestion = new Suggestion(m.group(2));
 			
-			String d = m.group("disprover");
+			String d = m.group(3);
 			disprover = (d.equals("-") ? null : new Integer(d));
 			
-			String c = m.group("shown");
+			String c = m.group(4);
 			shown = (c == null ? null : Card.from(c));
-		} catch (
-			InvalidSuggestionString |
-			IllegalStateException |
-			NumberFormatException e
-		) {
+		} catch (InvalidSuggestionString e) {
+			throw new ProtocolViolation("accusation", message);
+		} catch (IllegalStateException e) {
+			throw new ProtocolViolation("accusation", message);
+		} catch (NumberFormatException e) {
 			throw new ProtocolViolation("accusation", message);
 		}
-		
+
 		processSuggestion(suggester, suggestion, disprover, shown);
 		
 		return "ok";
@@ -681,7 +681,7 @@ public abstract class SpeedClueAI {
 	
 	private static final Pattern accusationMessagePattern = Pattern.compile(
 		String.format(
-			"accusation (?<accuser>%s) (?<accusation>%s) (?<correct>\\+|-)",
+			"accusation (%s) (%s) (\\+|-)",
 			playerIndexPattern,
 			suggestionPattern
 		),
@@ -690,7 +690,7 @@ public abstract class SpeedClueAI {
 	
 	private static final Pattern disproveMessagePattern = Pattern.compile(
 		String.format(
-			"disprove (?<suggester>%s) (?<suggestion>%s)",
+			"disprove (%s) (%s)",
 			playerIndexPattern,
 			suggestionPattern
 		),
@@ -699,8 +699,7 @@ public abstract class SpeedClueAI {
 	
 	private static final Pattern resetMessagePattern = Pattern.compile(
 		String.format(
-			"reset (?<playerCount>[3-6]) (?<playerIndex>%s) " +
-				"(?<cards>(?:%s ?){3,6})",
+			"reset ([3-6]) (%s) ((?:%s ?){3,6})",
 			playerIndexPattern,
 			cardPattern
 		),
@@ -709,8 +708,7 @@ public abstract class SpeedClueAI {
 	
 	private static final Pattern suggestionMessagePattern = Pattern.compile(
 		String.format(
-			"suggestion (?<suggester>%s) (?<suggestion>%s) (?<disprover>-|%s)" +
-				"(?: (?<shown>%s))?",
+			"suggestion (%s) (%s) (-|%s)(?: (%s))?",
 			playerIndexPattern,
 			suggestionPattern,
 			playerIndexPattern,

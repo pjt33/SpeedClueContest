@@ -50,7 +50,7 @@ public class RandomAI extends SpeedClueAI {
 		disproved = false;
 		last = null;
 		random = new Random();
-		suggestions = new ArrayList<>();
+		suggestions = new ArrayList<Suggestion>();
 	}
 	
 	//******************* Protected and Private Interface ********************//
@@ -130,13 +130,12 @@ public class RandomAI extends SpeedClueAI {
 				logMessages
 			).run();
 		} catch (Exception e) {
-			try (
+			try {
 				PrintWriter pw = new PrintWriter(
 					new File(
 						String.format("error_%s.txt", identifier)
 					)
-				)
-			) {
+				);
 				pw.format("%s\n", e.getMessage());
 				for (StackTraceElement ste : e.getStackTrace()) {
 					pw.format("  %s\n", ste.toString());
